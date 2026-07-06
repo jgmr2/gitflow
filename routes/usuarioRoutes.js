@@ -1,13 +1,11 @@
 import { Router } from 'express';
+import { registrar, obtenerPerfil } from '../controllers/usuarioController.js';
+import { registroValidator, perfilValidator } from '../validators/usuarioValidator.js';
+import { validate } from '../middlewares/validate.js';
 
 const router = Router();
 
-router.post('/registro', (req, res) => {
-  res.status(200).json({ mensaje: 'Hola mundo desde POST /api/usuarios/registro' });
-});
-
-router.get('/perfil/:id', (req, res) => {
-  res.status(200).json({ mensaje: 'Hola mundo desde GET /api/usuarios/perfil/:id' });
-});
+router.post('/registro', registroValidator, validate, registrar);
+router.get('/perfil/:id', perfilValidator, validate, obtenerPerfil);
 
 export default router;
