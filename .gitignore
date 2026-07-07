@@ -21,3 +21,6 @@ yarn-error.log*
 dist/
 build/
 out/
+
+# Documento de requerimientos del curso
+Propuestas de APIs con Enfoque de Seguridad Progresiva - Stack MEN.md
