@@ -9,10 +9,20 @@ const app = express();
 
 app.disable('x-powered-by');
 
-// Documentación Swagger UI servida en la raíz. Usa scripts/estilos inline,
-// por eso corre con CSP relajado, aislado de las cabeceras del resto de la API.
-app.use(helmet({ contentSecurityPolicy: false }), swaggerUi.serve);
-app.get('/', swaggerUi.setup(swaggerSpec));
+// Documentación Swagger UI servida en la raíz. Los assets se cargan desde CDN
+// (en vez de node_modules/swagger-ui-dist) porque el bundler serverless de Vercel
+// no rastrea los archivos estáticos que swagger-ui-express sirve en runtime,
+// causando 404 en swagger-ui.css / swagger-ui-bundle.js en producción.
+const SWAGGER_UI_CDN = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.32.8';
+app.get(
+  '/',
+  helmet({ contentSecurityPolicy: false }),
+  swaggerUi.setup(swaggerSpec, {
+    customCssUrl: `${SWAGGER_UI_CDN}/swagger-ui.min.css`,
+    customJs: [`${SWAGGER_UI_CDN}/swagger-ui-bundle.js`, `${SWAGGER_UI_CDN}/swagger-ui-standalone-preset.js`],
+    customfavIcon: `${SWAGGER_UI_CDN}/favicon-32x32.png`,
+  })
+);
 
 app.use(helmet());
 app.use(express.json());
