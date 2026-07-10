@@ -95,3 +95,9 @@ En cada rama se reconstruyeron los contenedores (`docker compose up -d --build`)
 - GET perfil con id válido pero inexistente → 404 "Usuario no encontrado".
 - GET perfil con id válido y existente → devuelve datos públicos.
 - Verificación directa en `mongosh`: el campo `password` se almacena como hash bcrypt (`$2b$12$...`), nunca en texto plano.
+
+## Cierre del Proyecto 2: merge a `main`
+
+Con `models`, `routes` y `controllers` ya fusionados en `develop`, se hizo un commit adicional (`feature/documentation`, `2b279b8`) actualizando `gitflow.md` y `.gitignore`, y finalmente se fusionó `develop` en `main`.
+
+`main` y `develop` apuntan actualmente al mismo commit (`2b279b8`, merge fast-forward, sin conflictos), quedando `main` con la implementación completa y verificada de la API #2.
