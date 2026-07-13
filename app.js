@@ -9,11 +9,14 @@ const app = express();
 
 app.disable('x-powered-by');
 
-// Documentación Swagger UI servida en la raíz. Los assets se cargan desde CDN
-// (en vez de node_modules/swagger-ui-dist) porque el bundler serverless de Vercel
-// no rastrea los archivos estáticos que swagger-ui-express sirve en runtime,
-// causando 404 en swagger-ui.css / swagger-ui-bundle.js en producción.
+// Documentación Swagger UI servida en la raíz.
+// - swaggerUi.serve incluye swaggerInitFn, que genera /swagger-ui-init.js dinámicamente
+//   en memoria (necesario para que la UI se inicialice) — siempre funciona en Vercel.
+// - El CSS/JS pesado (swagger-ui.css, swagger-ui-bundle.js, standalone-preset.js) se
+//   carga desde CDN en vez de node_modules/swagger-ui-dist: el bundler serverless de
+//   Vercel no rastrea esos archivos estáticos servidos en runtime y da 404 con ellos.
 const SWAGGER_UI_CDN = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.32.8';
+app.use(helmet({ contentSecurityPolicy: false }), swaggerUi.serve);
 app.get(
   '/',
   helmet({ contentSecurityPolicy: false }),
