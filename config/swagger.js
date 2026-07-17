@@ -7,10 +7,22 @@ const options = {
       title: 'API de Registro de Usuarios y Gestión de Perfiles',
       version: '1.0.0',
       description:
-        'Proyecto 2 del catálogo de APIs con enfoque de seguridad progresiva (Stack MEN). Enfoque: Almacenamiento Seguro de Credenciales.',
+        'Proyecto 2 del catálogo de APIs con enfoque de seguridad progresiva (Stack MEN). Enfoque: Almacenamiento Seguro de Credenciales.\n\n' +
+        '**Comportamientos globales** (aplican a toda la API, no a un endpoint en particular):\n' +
+        '- Cualquier ruta no definida responde `404` con `{ "mensaje": "Recurso no encontrado" }`.\n' +
+        '- Un cuerpo JSON malformado en cualquier request responde `400` con `{ "mensaje": "JSON malformado en el cuerpo de la petición" }`.\n\n' +
+        '**Autenticación:** todos los endpoints bajo `/api` requieren una API key estática en el header `x-api-key`. Usa el botón "Authorize" para configurarla una vez y probarlos desde aquí.',
     },
     servers: [{ url: '/', description: 'Servidor actual' }],
+    security: [{ ApiKeyAuth: [] }],
     components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key',
+        },
+      },
       schemas: {
         UsuarioPublico: {
           type: 'object',

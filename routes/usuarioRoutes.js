@@ -53,6 +53,12 @@ const router = Router();
  *               oneOf:
  *                 - $ref: '#/components/schemas/ErrorValidacion'
  *                 - $ref: '#/components/schemas/ErrorMensaje'
+ *       401:
+ *         description: Falta la API key o es inválida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMensaje'
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -89,6 +95,12 @@ router.post('/registro', registroValidator, validate, registrar);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorValidacion'
+ *       401:
+ *         description: Falta la API key o es inválida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMensaje'
  *       404:
  *         description: Usuario no encontrado
  *         content:
