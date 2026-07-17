@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { connectDB } from './db.js';
 import { swaggerSpec } from './config/swagger.js';
-import { apiKeyAuth } from './middlewares/apiKeyAuth.js';
+import { appTokenAuth } from './middlewares/appTokenAuth.js';
 import usuarioRoutes from './routes/usuarioRoutes.js';
 
 const app = express();
@@ -31,10 +31,10 @@ app.get(
 app.use(helmet());
 app.use(express.json());
 
-// Protege todos los endpoints de negocio con una API key estática (header x-api-key).
-// Se valida antes de intentar conectar a Mongo para no gastar conexiones en requests
-// no autorizadas.
-app.use('/api', apiKeyAuth);
+// Protege todos los endpoints de negocio con un application token (JWT firmado con
+// JWT_SECRET), enviado en el header app-token. Se valida antes de intentar conectar
+// a Mongo para no gastar conexiones en requests no autorizadas.
+app.use('/api', appTokenAuth);
 
 app.use(async (req, res, next) => {
   try {

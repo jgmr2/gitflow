@@ -54,7 +54,7 @@ const router = Router();
  *                 - $ref: '#/components/schemas/ErrorValidacion'
  *                 - $ref: '#/components/schemas/ErrorMensaje'
  *       401:
- *         description: Falta la API key o es inválida
+ *         description: Falta el application token o es inválido
  *         content:
  *           application/json:
  *             schema:
@@ -96,7 +96,7 @@ router.post('/registro', registroValidator, validate, registrar);
  *             schema:
  *               $ref: '#/components/schemas/ErrorValidacion'
  *       401:
- *         description: Falta la API key o es inválida
+ *         description: Falta el application token o es inválido
  *         content:
  *           application/json:
  *             schema:
