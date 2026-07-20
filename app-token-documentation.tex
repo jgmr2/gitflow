@@ -1,0 +1,364 @@
+\documentclass[11pt,letterpaper]{article}
+
+% ---------- Paquetes ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{longtable}
+\usepackage{booktabs}
+
+% ---------- Configuración de listados de código ----------
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codegreen}{RGB}{0,128,0}
+\definecolor{codegray}{RGB}{110,110,110}
+\definecolor{codepurple}{RGB}{111,45,168}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  commentstyle=\color{codegray}\itshape,
+  keywordstyle=\color{codepurple}\bfseries,
+  stringstyle=\color{codegreen},
+  breaklines=true,
+  breakatwhitespace=false,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+}
+
+% ---------- Encabezado/pie de página ----------
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{App-token documentation}
+\lhead{Proyecto 2 -- API de Usuarios (MEN Stack)}
+\rfoot{\thepage}
+
+% ---------- Placeholder de capturas de pantalla ----------
+% Usar \screenshot{ancho}{alto en cm}{texto a mostrar}{caption} donde toque
+% insertar una captura real. Reemplazar por \includegraphics cuando se tenga
+% el archivo de imagen.
+\newcommand{\screenshot}[3]{%
+  \begin{figure}[H]
+    \centering
+    \fbox{\parbox[c][#1cm][c]{0.85\textwidth}{%
+      \centering
+      \Large\textit{[ INSERTAR CAPTURA DE PANTALLA ]}\\[0.8em]
+      \normalsize #2
+    }}
+    \caption{#3}
+  \end{figure}
+}
+
+\title{\textbf{App-token documentation}\\[0.3cm]\large Implementación de Application Token (JWT) sobre las rutas del proyecto}
+\author{Proyecto 2 -- API de Registro de Usuarios y Gestión de Perfiles \\ Stack MEN (MongoDB, Express, Node.js) \\ Despliegue: Vercel}
+\date{17 de julio de 2026}
+
+\begin{document}
+
+% ==================== PORTADA ====================
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge\bfseries App-token documentation\par}
+\vspace{1cm}
+{\Large Asignación: Application Token\par}
+\vspace{0.5cm}
+{\large Docente: Vidal Zuazo Ortiz\par}
+\vspace{2cm}
+{\large Proyecto: API de Registro de Usuarios y Gestión de Perfiles (Proyecto 2)\par}
+{\large Stack: MongoDB, Express, Node.js (MEN)\par}
+{\large Plataforma de despliegue: Vercel\par}
+\vspace{2cm}
+{\large Dominio de producción: \url{https://gitflow-seven.vercel.app}\par}
+\vspace{2cm}
+{\large 17 de julio de 2026\par}
+\vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ==================== INTRODUCCIÓN ====================
+\section{Introducción}
+
+Este documento detalla la implementación de un \textbf{application token} (token de aplicación) sobre
+todas las rutas de negocio del proyecto, siguiendo las instrucciones de la asignación:
+
+\begin{enumerate}[label=\arabic*.]
+  \item Agregar un application token a todas las rutas de los proyectos desarrollados.
+  \item Generar un JSON Web Token que funcione como el application token a leer.
+  \item Crear la función que valida el application token.
+  \item Aplicar el middleware a todas las rutas del proyecto.
+  \item La validación debe regresar un error 401 si el token falta o es incorrecto.
+  \item El application token debe enviarse en el header \texttt{app-token}.
+  \item Subir la funcionalidad completa a las ramas \texttt{develop} y \texttt{main}.
+\end{enumerate}
+
+Adicionalmente, se exige realizar pruebas de integración contra el dominio de despliegue,
+probando al menos una petición \texttt{GET} y una \texttt{POST}.
+
+A diferencia de un token de sesión de usuario (que se emite tras un login y representa la
+identidad de una persona), el \textbf{application token} es un credencial única, generada una
+sola vez, que identifica a la \emph{aplicación cliente} autorizada a consumir la API -- sin
+importar qué usuario esté detrás de la petición.
+
+\section{Diseño de la solución}
+
+El application token es un \textbf{JSON Web Token (JWT)} firmado con el algoritmo HS256, usando
+el secreto \texttt{JWT\_SECRET} (variable de entorno). El payload incluye un claim distintivo
+\texttt{scope: "app-token"} para que este JWT no pueda confundirse con ningún otro tipo de token
+que en el futuro pudiera firmarse con el mismo secreto (por ejemplo, tokens de sesión de usuario).
+
+A diferencia de una simple cadena aleatoria comparada con \texttt{===}, validar un JWT implica
+verificar su \textbf{firma criptográfica} (\texttt{jwt.verify}), lo cual es más robusto: el
+servidor nunca almacena ni compara el token literal, solo confirma que fue firmado con el
+secreto correcto y que no ha sido alterado.
+
+\newpage
+% ==================== PASO 1 y 2 ====================
+\section{Paso 1 y 2: Generación del JSON Web Token}
+
+Se generó el application token ejecutando un script puntual con la librería \texttt{jsonwebtoken}
+(ya presente como dependencia del proyecto), firmando un payload con el claim \texttt{scope}:
+
+\begin{lstlisting}[language=JavaScript, caption=Generación del application token]
+const jwt = require('jsonwebtoken');
+const secret = process.env.JWT_SECRET;
+
+const token = jwt.sign(
+  { scope: 'app-token', app: 'gitflow-api-usuarios' },
+  secret
+);
+
+console.log(token);
+\end{lstlisting}
+
+El token resultante (a usar en todas las pruebas de integración) es:
+
+\begin{lstlisting}[caption=Application token generado]
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6ImFwcC10b2tlbiIsImFwcCI6ImdpdGZsb3ctYXBpLXVzdWFyaW9zIiwiaWF0IjoxNzg0MzA4MjkyfQ.f7Q1SVDYWSDNB61C4aewBFosWYxcKHrt6HEIfCljRlk
+\end{lstlisting}
+
+El valor de \texttt{JWT\_SECRET} se almacena únicamente como variable de entorno (nunca en el
+código fuente ni en el repositorio), tanto en el archivo \texttt{.env} local como en las
+variables de entorno del proyecto en Vercel.
+
+\screenshot{7}{Consola local mostrando el token JWT generado}{Generación del application token via script Node.js}
+
+\newpage
+% ==================== PASO 3 ====================
+\section{Paso 3: Función que valida el application token}
+
+Se creó el middleware \texttt{middlewares/appTokenAuth.js}, responsable de leer el header
+\texttt{app-token}, verificar la firma del JWT contra \texttt{JWT\_SECRET}, y confirmar que el
+claim \texttt{scope} corresponda a \texttt{"app-token"}:
+
+\begin{lstlisting}[language=JavaScript, caption=middlewares/appTokenAuth.js]
+import jwt from 'jsonwebtoken';
+
+const APP_TOKEN_SCOPE = 'app-token';
+
+export function appTokenAuth(req, res, next) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ mensaje: 'JWT_SECRET no esta configurado en el servidor' });
+  }
+
+  const token = req.header('app-token');
+  if (!token) {
+    return res.status(401).json({ mensaje: 'Falta el application token (header app-token)' });
+  }
+
+  try {
+    const payload = jwt.verify(token, secret);
+    if (payload.scope !== APP_TOKEN_SCOPE) {
+      return res.status(401).json({ mensaje: 'Application token invalido' });
+    }
+    next();
+  } catch (error) {
+    return res.status(401).json({ mensaje: 'Application token invalido' });
+  }
+}
+\end{lstlisting}
+
+\newpage
+% ==================== PASO 4 ====================
+\section{Paso 4: Aplicación del middleware a las rutas del proyecto}
+
+El middleware se monta en \texttt{app.js}, protegiendo todo el prefijo \texttt{/api} (donde
+viven los dos endpoints de negocio del proyecto: \texttt{POST /api/usuarios/registro} y
+\texttt{GET /api/usuarios/perfil/:id}). Se valida el token \textbf{antes} de intentar conectar
+a la base de datos, para no gastar conexiones en peticiones no autorizadas:
+
+\begin{lstlisting}[language=JavaScript, caption=Montaje del middleware en app.js]
+app.use(helmet());
+app.use(express.json());
+
+// Protege todos los endpoints de negocio con un application token (JWT
+// firmado con JWT_SECRET), enviado en el header app-token.
+app.use('/api', appTokenAuth);
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ mensaje: 'No se pudo conectar a la base de datos' });
+  }
+});
+
+app.use('/api/usuarios', usuarioRoutes);
+\end{lstlisting}
+
+\subsection*{Nota de diseño: la documentación (\texttt{/}) queda pública}
+
+La ruta raíz \texttt{/} sirve la documentación interactiva de Swagger UI, no es un endpoint de
+datos. Se decidió \textbf{no} exigir el \texttt{app-token} ahí, ya que un navegador no puede
+adjuntar headers personalizados al simplemente navegar a una URL -- exigir el token en esa ruta
+haría la documentación inutilizable desde un navegador normal. El middleware se aplica a todo lo
+que sí constituye un endpoint de negocio (\texttt{/api/*}), que es la superficie real que la
+asignación busca proteger.
+
+\newpage
+% ==================== PASO 5 ====================
+\section{Paso 5: Respuesta 401 ante token faltante o incorrecto}
+
+El middleware contempla explícitamente ambos escenarios de fallo:
+
+\begin{itemize}
+  \item \textbf{Token ausente:} responde \texttt{401} con \texttt{\{"mensaje": "Falta el application token (header app-token)"\}}.
+  \item \textbf{Token presente pero inválido} (firma incorrecta, expirado, manipulado, o sin el claim \texttt{scope} correcto): responde \texttt{401} con \texttt{\{"mensaje": "Application token inválido"\}}.
+\end{itemize}
+
+\screenshot{9}{Postman: POST /api/usuarios/registro sin header app-token, respuesta 401}{Prueba: token ausente}
+
+\screenshot{9}{Postman: POST /api/usuarios/registro con app-token inválido, respuesta 401}{Prueba: token inválido}
+
+\newpage
+% ==================== PASO 6 ====================
+\section{Paso 6: Header \texttt{app-token}}
+
+Tal como exige la asignación, el nombre del header es exactamente \texttt{app-token} (no
+\texttt{Authorization}, no \texttt{x-api-key}). Esto se refleja tanto en el middleware
+(\texttt{req.header('app-token')}) como en la documentación de Swagger, donde se declaró el
+esquema de seguridad correspondiente:
+
+\begin{lstlisting}[language=JavaScript, caption=Esquema de seguridad en config/swagger.js]
+components: {
+  securitySchemes: {
+    AppTokenAuth: {
+      type: 'apiKey',
+      in: 'header',
+      name: 'app-token',
+    },
+  },
+  ...
+},
+security: [{ AppTokenAuth: [] }],
+\end{lstlisting}
+
+Gracias a esto, Swagger UI muestra el botón \textbf{``Authorize''}, permitiendo configurar el
+token una sola vez y probar los endpoints directamente desde la documentación.
+
+\screenshot{9}{Swagger UI mostrando el botón Authorize y el candado en los endpoints protegidos}{Documentación reflejando el esquema de autenticación}
+
+\newpage
+% ==================== PASO 7 ====================
+\section{Paso 7: Publicación en \texttt{develop} y \texttt{main}}
+
+Siguiendo el flujo de Git establecido para el proyecto (documentado en \texttt{gitflow.md}), el
+desarrollo se realizó en una rama \texttt{feature/api-key} (posteriormente evolucionada a
+implementar el application token con JWT), y se fusionó primero en \texttt{develop} y después en
+\texttt{main}, quedando ambas ramas sincronizadas en el mismo commit:
+
+\begin{lstlisting}[caption=Verificación de sincronización entre develop y main]
+$ git rev-parse develop main
+f534ecfd334c5abd956562c09439e66f05a91a72
+f534ecfd334c5abd956562c09439e66f05a91a72
+\end{lstlisting}
+
+Ambas ramas fueron además enviadas al repositorio remoto (\texttt{git push}), y Vercel
+redesplegó automáticamente la aplicación a partir de \texttt{main}.
+
+\newpage
+% ==================== PRUEBAS DE INTEGRACIÓN ====================
+\section{Pruebas de integración contra el dominio de producción}
+
+Dominio evaluado: \url{https://gitflow-seven.vercel.app}
+
+Se realizaron pruebas end-to-end contra el servicio ya desplegado en la nube, cubriendo al menos
+una petición \texttt{GET} y una \texttt{POST}, en los tres escenarios relevantes: sin token, con
+token inválido, y con el application token correcto.
+
+\subsection{Prueba 1 -- POST /api/usuarios/registro}
+
+\begin{longtable}{p{4.5cm}p{2cm}p{7.5cm}}
+\toprule
+\textbf{Escenario} & \textbf{HTTP} & \textbf{Respuesta} \\
+\midrule
+\endhead
+Sin header \texttt{app-token} & 401 & \texttt{\{"mensaje":"Falta el application token (header app-token)"\}} \\
+\texttt{app-token} inválido & 401 & \texttt{\{"mensaje":"Application token inválido"\}} \\
+\texttt{app-token} correcto & 201 & \texttt{\{"id":"6a5a6715217686f07cb21f16","nombre":"Token Bueno Prod3","correo":"tokenbuenoprod3@example.com","createdAt":"2026-07-17T17:32:05.237Z"\}} \\
+\bottomrule
+\end{longtable}
+
+\screenshot{9}{Postman: POST /api/usuarios/registro con app-token correcto contra el dominio de producción, respuesta 201}{Prueba de integración POST exitosa}
+
+\subsection{Prueba 2 -- GET /api/usuarios/perfil/:id}
+
+\begin{longtable}{p{4.5cm}p{2cm}p{7.5cm}}
+\toprule
+\textbf{Escenario} & \textbf{HTTP} & \textbf{Respuesta} \\
+\midrule
+\endhead
+Sin header \texttt{app-token} & 401 & \texttt{\{"mensaje":"Falta el application token (header app-token)"\}} \\
+\texttt{app-token} correcto, usuario existente & 200 & \texttt{\{"id":"6a5a6715217686f07cb21f16","nombre":"Token Bueno Prod3","correo":"tokenbuenoprod3@example.com","createdAt":"2026-07-17T17:32:05.237Z"\}} \\
+\bottomrule
+\end{longtable}
+
+\screenshot{9}{Postman: GET /api/usuarios/perfil/:id con app-token correcto contra el dominio de producción, respuesta 200}{Prueba de integración GET exitosa}
+
+\subsection{Comando de referencia (cURL)}
+
+\begin{lstlisting}[language=bash, caption=Reproducción de las pruebas via cURL]
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...f7Q1SVDYWSDNB61C4aewBFosWYxcKHrt6HEIfCljRlk"
+BASE="https://gitflow-seven.vercel.app"
+
+# POST sin token -> 401
+curl -X POST "$BASE/api/usuarios/registro" \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Test","correo":"test@example.com","password":"Sup3r$ecreto!"}'
+
+# POST con token correcto -> 201
+curl -X POST "$BASE/api/usuarios/registro" \
+  -H "Content-Type: application/json" -H "app-token: $TOKEN" \
+  -d '{"nombre":"Test","correo":"test@example.com","password":"Sup3r$ecreto!"}'
+
+# GET con token correcto -> 200
+curl -H "app-token: $TOKEN" "$BASE/api/usuarios/perfil/<id>"
+\end{lstlisting}
+
+\newpage
+% ==================== CONCLUSIÓN ====================
+\section{Conclusión}
+
+Se implementó exitosamente un application token basado en JSON Web Tokens, cumpliendo cada uno
+de los 7 puntos de la asignación: el token se genera como un JWT firmado, existe una función de
+middleware dedicada a su validación criptográfica, se aplica a todas las rutas de negocio del
+proyecto, responde \texttt{401} ante ausencia o invalidez del token, se transmite en el header
+\texttt{app-token}, y quedó publicado tanto en \texttt{develop} como en \texttt{main}. Las
+pruebas de integración contra el dominio de producción en Vercel confirman el comportamiento
+esperado en un entorno real, no solo en desarrollo local.
+
+\end{document}
